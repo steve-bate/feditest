@@ -3,9 +3,10 @@ Classes that represent a TestPlan and its parts.
 """
 
 from typing import Any
+
 import msgspec
 
-from feditest import Test
+from feditest import Test, all_node_drivers, all_tests
 from feditest.reporting import fatal
 
 
@@ -59,9 +60,6 @@ class TestPlan(msgspec.Struct):
         Check that we have all the tests and node drivers needed for this plan. If all is well,
         return. If not well, throw an Exception that explains the problem
         """
-        global all_node_drivers
-        global all_tests
-
         for session in self.sessions:
             all_roles = {}
             for role in session.constellation.roles:

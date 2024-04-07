@@ -2,11 +2,10 @@
 Classes that represent a running TestPlan and its its parts.
 """
 
-import time
 from datetime import datetime, timezone
 from typing import Any, List, Type
 
-from feditest import Test
+from feditest import Test, all_node_drivers, all_tests
 from feditest.protocols import Node, NodeDriver
 from feditest.reporting import error, fatal, info
 from feditest.testplan import (
@@ -26,7 +25,6 @@ class TestRunConstellation:
         """
         Set up the constellation of nodes needed for some tests.
         """
-        global all_node_drivers
 
         info('Setting up constellation:', self._plan_constellation.name)
 
@@ -106,7 +104,6 @@ class TestRunSession:
 
 
     def _run_test_spec(self, test_spec: TestPlanTestSpec):
-        global all_tests
 
         info('Running test', test_spec.name)
         test : Test = all_tests.get(test_spec.name)
