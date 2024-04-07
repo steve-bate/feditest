@@ -1,3 +1,4 @@
+import logging
 import re
 import time
 from http import HTTPStatus
@@ -60,21 +61,21 @@ class WebFingerServerNode(WebFingerServer):
         app.add_route("/.well-known/webfinger", webfinger)
         self._server = Server(Config(app=app, host="localhost", port=9999))
         self._server_thread: Thread = None
+        self.log = logging.getLogger(type(self).__qualname__)
 
     def _start(self):
-        print("@@@@ before run")
+        self.log.info("Starting server")
         self._server.run()
-        print("@@@@ after run")
 
     def start(self):
         self._server_thread = Thread(target=self._start)
         self._server_thread.start()
         time.sleep(1)
-        print("@@@@ server started")
+        self.log.info("Server started")
 
     def stop(self):
         self._server.should_exit = True
-        print("@@@@ server shutdown")
+        self.log.info("Server shutdown")
 
     def obtain_account_identifier(self, nickname: str = None) -> str:
         """

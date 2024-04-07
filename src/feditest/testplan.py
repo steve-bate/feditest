@@ -6,7 +6,7 @@ from typing import Any
 
 import msgspec
 
-from feditest import Test, all_node_drivers, all_tests
+from feditest import all_node_drivers, all_tests
 from feditest.reporting import fatal
 
 
@@ -73,7 +73,7 @@ class TestPlan(msgspec.Struct):
                     fatal('Cannot find node driver:', node_driver_name, 'for role:', role.name)
 
             for test_spec in session.tests:
-                test : Test | None = all_tests.get(test_spec.name)
+                test = all_tests.get(test_spec.name)
                 if test is None:
                     fatal('Cannot find test:', test_spec.name)
                 if test.constellation_size != len(session.constellation.roles):

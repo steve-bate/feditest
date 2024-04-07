@@ -4,7 +4,7 @@ Core module.
 
 from ast import Module
 from collections.abc import Callable
-from inspect import signature, getmodule
+from inspect import getmodule, signature
 from pkgutil import resolve_name
 from types import FunctionType
 from typing import Any, Type
@@ -163,3 +163,4 @@ def nodedriver(to_register: Type[Any]):
     if full_name in all_node_drivers:
         fatal('Cannot re-register NodeDriver', full_name )
     all_node_drivers[full_name] = to_register
+

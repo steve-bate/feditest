@@ -2,10 +2,13 @@
 Classes that represent a running TestPlan and its its parts.
 """
 
+import sys
+from contextlib import redirect_stdout
+from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, List, Type
+from typing import IO, Any, List, Protocol, Type
 
-from feditest import Test, all_node_drivers, all_tests
+from feditest import all_node_drivers, all_tests
 from feditest.protocols import Node, NodeDriver
 from feditest.reporting import error, fatal, info
 from feditest.testplan import (
@@ -90,7 +93,7 @@ class TestRunSession:
                             self._run_test_spec(test_spec)
                         except Exception as e:
                              error('FAILED test:', e)
-                             self._problems.append((test_spec, e))
+                             self._problems.append(TestProblem(test_spec, e))
             finally:
                 self._constellation.teardown()
 
@@ -106,7 +109,7 @@ class TestRunSession:
     def _run_test_spec(self, test_spec: TestPlanTestSpec):
 
         info('Running test', test_spec.name)
-        test : Test = all_tests.get(test_spec.name)
+        test = all_tests.get(test_spec.name)
 
         for test_step in test.steps:
             info('Running step', test_step.name )
@@ -128,6 +131,58 @@ class TestRunSession:
                     error( 'Constellation size not supported yet:', len(plan_roles))
 
 
+@dataclass
+class TestProblem:
+    test: TestPlanTestSpec
+    exc: Exception
+
+
+class TestResultWriterProtocol(Protocol):
+    """An object than write test results in some format."""
+    def write(self, out: IO, plan: TestPlan, 
+              run_sessions: list[TestRunSession], 
+              metadata: dict[str, Any]|None = None):
+        """Write test results."""
+        ...
+
+
+class TapTestResultWriter(TestResultWriterProtocol):
+    def write(self, out, plan, run_sessions, metadata):
+        with redirect_stdout(out):
+            print("TAP version 14")
+            print(f"# test plan: {plan.name}")
+            if metadata:
+                for key, value in metadata.items():
+                    print(f"# {key}: {value}")
+            # date, etc.
+            test_id = 0
+            for run_session, plan_session in zip(run_sessions, plan.sessions):
+                print(f"# session: {run_session.name}")
+                print(f"# constellation: {plan_session.constellation.name}")
+                print(f"#   name: {plan_session.constellation.name}")
+                print("#   roles:")
+                for role in plan_session.constellation.roles:
+                    print(f"#     - name: {role.name}")
+                    print(f"#       driver: {role.nodedriver}")
+                for test in plan_session.tests:
+                    test_id += 1
+                    if problem := self._get_problem(run_session, test):
+                        print(f"not ok {test_id} - {test.name}")
+                        print("  ---")
+                        print("  problem: |")
+                        for line in str(problem).strip().split("\n"):
+                            print(f"    {line}")
+                        print("  ...")
+                    else:
+                        directives = f" # SKIP {test.disabled}" if test.disabled else ""
+                        print(f"ok {test_id} - {test.name}{directives}")
+            print(f"1..{test_id}")
+
+    @staticmethod
+    def _get_problem(run_session, test: TestPlanTestSpec) -> TestProblem:
+        return next((p for p in run_session.problems if p.test.name == test.name), None)
+
+
 class TestRun:
     """
     Encapsulates the state of a test run while feditest is executing a TestPlan
@@ -135,63 +190,6 @@ class TestRun:
     def __init__(self, plan: TestPlan):
         self._plan = plan
         self._runid : str = 'feditest-run-' + datetime.now(timezone.utc).strftime( "%Y-%m-%dT%H:%M:%S.%f")
-
-    # def _report_test_results(self, plan: TestPlan, run_sessions: list[TestRunSession]):
-    #     print("TAP version 14")
-    #     print(f"# plan: {self._plan.name}")
-    #     # date, etc.
-    #     for i in range(0, len(run_sessions)):
-    #         run_session = run_sessions[i]
-    #         plan_session = self._plan.sessions[i]
-    #         print(f"# session: {run_session.name}")
-    #         print(f"    1..{len(plan_session.tests)}")
-    #         for n, test in enumerate(plan_session.tests):
-    #             problem = None
-    #             for problem_record in run_session.problems:
-    #                 if problem_record[0].name == test.name:
-    #                     problem = problem_record[1]
-    #             if problem:
-    #                 print(f"    not ok {n + 1} - {test.name}")
-    #                 for line in str(problem).split("\n"):
-    #                     print(f"    # {line}")
-    #             else:
-    #                 directives = f" # SKIP {test.disabled}" if test.disabled else ""
-    #                 print(f"    ok {n + 1} - {test.name}{directives}")
-    #         if run_session._problems:
-    #             print(f"not ok {i + 1} - {len(run_session.problems)} session error(s)")
-    #         else:
-    #             print(f"ok {i + 1}")
-
-    #     print(f"1..{len(self._plan.sessions)}")
-
-
-    def _report_test_results(self, plan: TestPlan, run_sessions: list[TestRunSession]):
-        print("TAP version 14")
-        print(f"# test plan: {self._plan.name}")
-        # date, etc.
-        test_count = sum(len(s.tests) for s in self._plan.sessions)
-        print(f"1..{test_count}")
-        test_id = 1
-        for i in range(0, len(run_sessions)):
-            run_session = run_sessions[i]
-            plan_session = self._plan.sessions[i]
-            print(f"# session: {run_session.name}")
-            for test in plan_session.tests:
-                problem = None
-                for problem_record in run_session.problems:
-                    if problem_record[0].name == test.name:
-                        problem = problem_record[1]
-                if problem:
-                    print(f"not ok {test_id} - {test.name}")
-                    print("  ---")
-                    print("  exception: |")
-                    for line in str(problem).strip().split("\n"):
-                        print(f"    {line}")
-                    print("  ...")
-                else:
-                    directives = f" # SKIP {test.disabled}" if test.disabled else ""
-                    print(f"ok {test_id} - {test.name}{directives}")
-                test_id += 1
 
     def run(self):
         info( f'RUNNING test plan: {self._plan.name} (id: {self._runid})' )
@@ -204,5 +202,8 @@ class TestRun:
             run_sessions.append(run_session)
             run_session.run()
 
-        self._report_test_results(self._plan, run_sessions)
+        # TODO Make this pluggable
+        TapTestResultWriter().write(sys.stdout, self._plan, run_sessions, {
+            "run_at": datetime.now().isoformat()
+        })
 

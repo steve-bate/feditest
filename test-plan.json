@@ -1,7 +1,8 @@
 {
-    "name" : "feditest-default",
+    "name" : "feditest-tap",
     "sessions" : [
         {
+            "name": "example",
             "constellation" : {
                 "name" : "Imp <-> WebFinger",
                 "roles" : [
