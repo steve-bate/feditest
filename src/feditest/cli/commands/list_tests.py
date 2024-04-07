@@ -4,7 +4,6 @@ List the available tests
 
 from argparse import ArgumentParser, Namespace
 import feditest
-from feditest.utils import find_submodules
 
 def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     """
