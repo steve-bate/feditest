@@ -291,6 +291,8 @@ class Imp(WebFingerClient):
                     if redirect_count <= 0:
                         raise WebClient.TooManyRedirectsError(uri)
                     request = response.next_request
+                else:
+                    break
 
         if response and response.is_success :
             jrd = Jrd(response.content) # may raise

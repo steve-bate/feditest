@@ -93,7 +93,7 @@ class WebFingerClient(WebClient):
         if not hostname:
             raise WebFingerClient.CannotDetermineWebfingerHost(resource_uri)
 
-        uri = f"https://{hostname}/.well-known/webfinger?resource={quote(resource_uri)}"
+        uri = f"http://{hostname}/.well-known/webfinger?resource={quote(resource_uri)}"
         return uri
 
 

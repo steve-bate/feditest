@@ -2,14 +2,19 @@
 Classes that represent a running TestPlan and its its parts.
 """
 
-from datetime import datetime, timezone
 import time
+from datetime import datetime, timezone
 from typing import Any, List, Type
 
 from feditest import Test
 from feditest.protocols import Node, NodeDriver
-from feditest.reporting import info, error, fatal
-from feditest.testplan import TestPlan, TestPlanConstellation, TestPlanSession, TestPlanTestSpec
+from feditest.reporting import error, fatal, info
+from feditest.testplan import (
+    TestPlan,
+    TestPlanConstellation,
+    TestPlanSession,
+    TestPlanTestSpec,
+)
 
 
 class TestRunConstellation:
@@ -38,7 +43,7 @@ class TestRunConstellation:
             else:
                 raise Exception(f'NodeDriver {node_driver} return null Node from provision_node()')
 
-        time.sleep(10) # This is a fudge factor because apparently some applications take some time
+        # time.sleep(10) # This is a fudge factor because apparently some applications take some time
                        # after deployment before they are ready to communicate.
                        # FIXME? This should potentially be in the NodeDrivers
 
@@ -63,6 +68,14 @@ class TestRunSession:
         self._constellation = None
         self._problems : List[Exception] = []
 
+    @property
+    def name(self):
+        return self._name
+    
+    @property
+    def problems(self):
+        return self._problems
+    
     def run(self):
         if len(self._plan_session.tests ):
             info('Running session:', self._name)
@@ -79,7 +92,7 @@ class TestRunSession:
                             self._run_test_spec(test_spec)
                         except Exception as e:
                              error('FAILED test:', e)
-                             self._problems.append(e)
+                             self._problems.append((test_spec, e))
             finally:
                 self._constellation.teardown()
 
@@ -126,20 +139,73 @@ class TestRun:
         self._plan = plan
         self._runid : str = 'feditest-run-' + datetime.now(timezone.utc).strftime( "%Y-%m-%dT%H:%M:%S.%f")
 
+    # def _report_test_results(self, plan: TestPlan, run_sessions: list[TestRunSession]):
+    #     print("TAP version 14")
+    #     print(f"# plan: {self._plan.name}")
+    #     # date, etc.
+    #     for i in range(0, len(run_sessions)):
+    #         run_session = run_sessions[i]
+    #         plan_session = self._plan.sessions[i]
+    #         print(f"# session: {run_session.name}")
+    #         print(f"    1..{len(plan_session.tests)}")
+    #         for n, test in enumerate(plan_session.tests):
+    #             problem = None
+    #             for problem_record in run_session.problems:
+    #                 if problem_record[0].name == test.name:
+    #                     problem = problem_record[1]
+    #             if problem:
+    #                 print(f"    not ok {n + 1} - {test.name}")
+    #                 for line in str(problem).split("\n"):
+    #                     print(f"    # {line}")
+    #             else:
+    #                 directives = f" # SKIP {test.disabled}" if test.disabled else ""
+    #                 print(f"    ok {n + 1} - {test.name}{directives}")
+    #         if run_session._problems:
+    #             print(f"not ok {i + 1} - {len(run_session.problems)} session error(s)")
+    #         else:
+    #             print(f"ok {i + 1}")
+
+    #     print(f"1..{len(self._plan.sessions)}")
+
+
+    def _report_test_results(self, plan: TestPlan, run_sessions: list[TestRunSession]):
+        print("TAP version 14")
+        print(f"# test plan: {self._plan.name}")
+        # date, etc.
+        test_count = sum(len(s.tests) for s in self._plan.sessions)
+        print(f"1..{test_count}")
+        test_id = 1
+        for i in range(0, len(run_sessions)):
+            run_session = run_sessions[i]
+            plan_session = self._plan.sessions[i]
+            print(f"# session: {run_session.name}")
+            for test in plan_session.tests:
+                problem = None
+                for problem_record in run_session.problems:
+                    if problem_record[0].name == test.name:
+                        problem = problem_record[1]
+                if problem:
+                    print(f"not ok {test_id} - {test.name}")
+                    print("  ---")
+                    print("  exception: |")
+                    for line in str(problem).strip().split("\n"):
+                        print(f"    {line}")
+                    print("  ...")
+                else:
+                    directives = f" # SKIP {test.disabled}" if test.disabled else ""
+                    print(f"ok {test_id} - {test.name}{directives}")
+                test_id += 1
+
     def run(self):
         info( f'RUNNING test plan: {self._plan.name} (id: {self._runid})' )
 
-        all_passed : bool = True
+        run_sessions = []
         for i in range(0, len(self._plan.sessions)):
             plan_session = self._plan.sessions[i]
-            run_session = TestRunSession(plan_session.name if plan_session.name else f'{self._plan.name}/{str(i)}', plan_session)
-
+            session_name = plan_session.name if plan_session.name else f'{self._plan.name}/{str(i)}'
+            run_session = TestRunSession(session_name, plan_session)
+            run_sessions.append(run_session)
             run_session.run()
-            if len(run_session._problems):
-                all_passed = False
 
-        if all_passed:
-            return 0
-        else:
-            info('FAILED')
-            return 1
+        self._report_test_results(self._plan, run_sessions)
+
