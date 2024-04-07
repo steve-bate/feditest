@@ -4,13 +4,17 @@ Main entry point for CLI invocation
 
 from argparse import ArgumentParser, Action
 import importlib
+import logging
 import sys
 import traceback
 from types import ModuleType
 
+import feditest.cli.commands
 from feditest.reporting import fatal, set_reporting_level
 from feditest.utils import find_submodules
-import feditest.cli.commands
+
+# logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+# logging.root.setLevel(logging.DEBUG)
 
 def main() -> None:
     """

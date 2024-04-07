@@ -143,7 +143,11 @@ class NodeDriver(ABC):
         pass # pylint: disable=unnecessary-pass
 
 
+<<<<<<< HEAD
     def prompt_user(self, question: str, value_if_known: Any | None = None, parse_validate: Callable[[str],Any] | None = None) -> Any | None:
+=======
+    def prompt_user(self, question: str, validation: Callable[[str],bool] | None = None) -> str:
+>>>>>>> bcefa2b (Removed unused imports. Updated type checks.)
         """
         If an NodeDriver does not natively implement support for a particular method,
         this method is invoked as a fallback. It prompts the user to enter information

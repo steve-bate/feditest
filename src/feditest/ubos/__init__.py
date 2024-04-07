@@ -56,6 +56,13 @@ class UbosNodeDriver(NodeDriver):
             raise NodeSpecificationInsufficientError(self, 'Needs parameter hostname for now') # FIXME: should get it from the JSON file
         if not hostname_validate(parameters['hostname']):
             raise NodeSpecificationInvalidError(self, 'hostname', parameters['hostname'])
+=======
+            raise Exception('UbosNodeDriver needs parameters')
+        if 'siteid' not in parameters:
+            raise Exception('UbosNodeDriver needs parameter siteid for now') # FIXME: should get it from the JSON file
+        if 'adminid' not in parameters:
+            raise Exception('UbosNodeDriver needs parameter adminid for now') # FIXME: should get it from the JSON file
+>>>>>>> bcefa2b (Removed unused imports. Updated type checks.)
         if 'sitejsonfile' in parameters:
             cmd = f"sudo ubos-admin deploy --file {parameters['sitejsonfile']}"
         elif 'backupfile' in parameters:

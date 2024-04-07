@@ -7,6 +7,7 @@ from typing import Any
 
 import msgspec
 
+<<<<<<< HEAD
 import feditest
 from feditest.utils import hostname_validate, FEDITEST_VERSION
 
@@ -17,6 +18,10 @@ class TestPlanError(RuntimeError):
     """
     def __init__(self, details: str ):
         super().__init__(f"TestPlan defined insufficiently: {details}" )
+=======
+from feditest import Test
+from feditest.reporting import fatal
+>>>>>>> bcefa2b (Removed unused imports. Updated type checks.)
 
 
 class TestPlanConstellationNode(msgspec.Struct):
@@ -322,5 +327,26 @@ class TestPlan(msgspec.Struct):
         if not self.sessions:
             raise TestPlanError('No TestPlanSessions have been defined in TestPlan')
 
+<<<<<<< HEAD
         for index, session in enumerate(self.sessions):
             session.check_can_be_executed(context_msg + f'TestPlanSession {index}: ')
+=======
+        for session in self.sessions:
+            all_roles = {}
+            for role in session.constellation.roles:
+                role_name = role.name
+                if role_name in all_roles:
+                    fatal('Role names must be unique within a constellation:', role_name)
+                all_roles[role_name] = True
+                node_driver_name : str = role.nodedriver
+
+                if node_driver_name not in all_node_drivers:
+                    fatal('Cannot find node driver:', node_driver_name, 'for role:', role.name)
+
+            for test_spec in session.tests:
+                test = all_tests.get(test_spec.name)
+                if test is None:
+                    fatal('Cannot find test:', test_spec.name)
+                if test.constellation_size != len(session.constellation.roles):
+                    fatal('Cannot run test with constellation of size', len(session.constellation.roles), ':', test_spec.name)
+>>>>>>> bcefa2b (Removed unused imports. Updated type checks.)

@@ -1,0 +1,38 @@
+{
+    "name" : "feditest-tap",
+    "sessions" : [
+        {
+            "name": "example",
+            "constellation" : {
+                "name" : "Imp <-> WebFinger",
+                "roles" : [
+                    {
+                        "name" : "webfingerclient",
+                        "nodedriver" : "imp.ImpInProcessNodeDriver"
+                    },
+                    {
+                        "name" : "subprocess",
+                        "nodedriver" : "process.SubprocessNodeDriver",
+                        "parameters": {
+                            "args": ["ls", "-l"]
+                        }
+                    }
+                ]
+            },
+            "tests" : [
+                {
+                    "name" : "webfinger.test_server_4_2__4_do_not_accept_malformed_resource_parameters"
+                },
+                {
+                    "name" : "webfinger.test_server_4_2__5_status_404_for_nonexisting_resources"
+                },
+                {
+                    "name" : "webfinger.test_server_4_2__8_server_serves_correct_content_type"
+                },
+                {
+                    "name" : "webfinger.test_server_4_3_server_only_returns_jrd_in_response_to_https_requests"
+                }
+            ]
+        }
+    ]
+}

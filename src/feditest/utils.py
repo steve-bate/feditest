@@ -345,6 +345,10 @@ def format_name_value_string(data: dict[str,str | None]) -> str:
     """
     line_width = 120 # FIXME?
     col1_width = len(max(data, key=len)) + 1
+<<<<<<< HEAD
+=======
+    # col2_width = line_width - col1_width
+>>>>>>> bcefa2b (Removed unused imports. Updated type checks.)
     ret = ''
     line = ''
     for key, value in data.items():
