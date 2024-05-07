@@ -66,7 +66,8 @@ class Imp(WebFingerClient):
                 if redirect_count <= 0:
                     raise WebClient.TooManyRedirectsError(current_request)
                 current_request = HttpRequest(ParsedUri.parse(pair.response.location()))
-            break
+            else:
+                break
 
         # I guess we always have a non-null responses here, but mypy complains without the if
         if pair:
@@ -88,7 +89,7 @@ class Imp(WebFingerClient):
                                 try:
                                     jrd.validate()
                                 except Exception as ex:
-                                    raise AssertionError(*ex.args[1:])
+                                    raise AssertionError(*ex.args)
                             return WebFingerQueryResponse(pair, jrd)
                         raise WebFingerClient.WebfingerQueryFailedError(
                             uri, ret_pair, "No payload"

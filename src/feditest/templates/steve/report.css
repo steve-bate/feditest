@@ -1,0 +1,113 @@
+body {
+    margin: 2rem !important;
+    padding-right: 2rem;
+}
+
+.status.passed {
+    color: lightgreen;
+}
+
+.status.failed {
+    color: pink;
+}
+
+.session {
+    margin-bottom: 1rem;
+}
+
+.session>.name {
+    font-weight: bold;
+    color: lightblue;
+}
+
+.session>.name::before {
+    content: "Session: ";
+}
+
+.constellation {
+    margin-left: 1rem;
+}
+
+.constellation>.name::before {
+    content: "Constellation: ";
+}
+
+.roles {
+    display: flex;
+    gap: 1rem;
+    margin-left: 1rem;
+}
+
+.role>.name {
+    font-weight: bold;
+}
+
+.role>.name::before {
+    content: "Role: ";
+}
+
+.role>.driver::before {
+    content: "Driver: ";
+}
+
+.role>table.parameters {
+    font-size: 0.8rem;
+}
+
+/* Scrolling Table */
+
+/* Style for first column */
+table.tests th:first-child,
+table.tests td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+}
+
+table.tests td {
+    white-space: nowrap;
+}
+
+/* Expandable cells */
+
+/* Hide the checkboxes */
+.expand-checkbox {
+    display: none;
+}
+
+/* Style the labels as toggle buttons */
+.expand-label {
+    cursor: pointer;
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 5px;
+}
+
+/* Style the expanded content */
+.expandable-content {
+    display: none;
+    /* padding: 10px;
+    border-radius: 5px; */
+    margin-top: 2px;
+    font-size: 0.6rem;
+    white-space: normal;
+}
+
+/* When the checkbox is checked, display the content */
+.expand-checkbox:checked+.expand-label+.expandable-content {
+    display: block;
+}
+
+/* Style the toggle arrow */
+.expand-label::after {
+    content: "\25B6";
+    /* Default: right-pointing triangle */
+    display: inline-block;
+    margin-left: 5px;
+    transition: transform 0.3s;
+}
+
+/* Rotate the arrow when the content is expanded */
+.expand-checkbox:checked+.expand-label::after {
+    transform: rotate(90deg);
+}

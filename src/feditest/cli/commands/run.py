@@ -7,7 +7,7 @@ from argparse import ArgumentParser, Namespace, _SubParsersAction
 import feditest
 from feditest.cli import default_node_drivers_dir
 from feditest.testplan import TestPlan
-from feditest.testrun import HtmlTestResultWriter, TapTestResultWriter, TestRun
+from feditest.testrun import HtmlTestResultWriter, JsonTestResultWriter, PickleTestResultWriter, TapTestResultWriter, TestRun
 
 
 def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
@@ -43,11 +43,27 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     elif isinstance(args.html, str):
         # TODO refactor to eliminate duplicate logic
         with open(args.html, "w", encoding="utf8") as out:
-            result_writer = HtmlTestResultWriter(args.template, out)
+            result_writer = HtmlTestResultWriter(args.template or 'report-standalone.jinja2', out)
             test_run = TestRun(plan, result_writer)
             return test_run.run()
     elif args.html:
-        result_writer = HtmlTestResultWriter(args.template)
+        result_writer = HtmlTestResultWriter(args.template or 'report-standalone.jinja2')
+        test_run = TestRun(plan, result_writer)
+        return test_run.run()
+    elif args.pickle:
+        # TODO refactor to eliminate duplicate logic
+        with open(args.pickle, "wb") as out:
+            result_writer = PickleTestResultWriter(out)  # noqa: F821
+            test_run = TestRun(plan, result_writer)
+            return test_run.run()
+    elif isinstance(args.json, str):
+        # TODO refactor to eliminate duplicate logic
+        with open(args.json, "w", encoding="utf8") as out:
+            result_writer = JsonTestResultWriter(out)
+            test_run = TestRun(plan, result_writer)
+            return test_run.run()
+    elif args.json:
+        result_writer = JsonTestResultWriter()
         test_run = TestRun(plan, result_writer)
         return test_run.run()
     else:
@@ -70,6 +86,9 @@ def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
                         help="Use TAP test result format. Can also provide an optional filename for results. Default is standard out.")
     format_group.add_argument('--html', nargs="?", const=True, default=False,
                         help="Use HTML test result format. Can also provide an optional filename for results. Default is standard out.")
-    parser.add_argument('--template', default='report-standalone.jinja2',
+    format_group.add_argument('--json', nargs="?", const=True, default=False,
+                        help="Use JSON test result format. Can also provide an optional filename for results. Default is standard out.")
+    format_group.add_argument('--pickle', type=str, help="Use pickle test result format.")
+    parser.add_argument('--template',
                         help="When specifying --html, use this HTML template (jinja2 format).")
     # I'm failing to create a group below the mutually_exclusive group that puts --html and --template together

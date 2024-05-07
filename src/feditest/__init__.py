@@ -100,7 +100,7 @@ class TestFromTestFunction(Test):
 
         except AssertionError as e:
             problem = TestFunctionProblem(test_spec, e)
-            error('FAILED test assertion:', problem, "\n".join(traceback.format_exception(problem.exc)))
+            # error('FAILED test assertion:', problem, "\n".join(traceback.format_exception(problem.exc)))
             session.problems.append(problem)
 
         except NotImplementedByNodeOrDriverError as e:
@@ -175,7 +175,7 @@ class TestFromTestClass(Test):
 
             except AssertionError as e:
                 problem = TestClassTestStepProblem(test_spec, e, test_step)
-                error('FAILED test assertion:', problem, "\n".join(traceback.format_exception(problem.exc)))
+                # error('FAILED test assertion:', problem, "\n".join(traceback.format_exception(problem.exc)))
                 session.problems.append(problem)
                 break # no point about the remaining steps in the test
 

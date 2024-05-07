@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>{% include "report.css" %}</style>
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+    />
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+    />
+    <title>Feditest Test Report</title>
+</head>
+<body>
+    <h1>Feditest Report</h1>
+    {% include "metadata.jinja2" %}
+    <h2>Test Summary</h2>
+    {% include "test_summary.jinja2" %}
+    {% with session_links=true %}
+    <h2>Test Results</h2>
+    {% include "test_matrix.jinja2" %}
+    {% endwith %}
+    <h2>Session Details</h2>
+    {% include "session_details.jinja2" %}
+</body>
+</html>

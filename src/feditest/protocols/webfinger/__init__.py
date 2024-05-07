@@ -31,10 +31,10 @@ class WebFingerServer(WebServer):
                     http_https_acct_uri_parse_validate)
         else:
             parsed = self.prompt_user(
-                    f'Please enter the URI of an existing or new account at Node "{self._rolename}" (e.g. "acct:testuser@example.local" ): ',
+                    f'Please enter the URI of an existing or new account at Node "{self._parameters["hostname"]}/{self._rolename}" (e.g. "acct:testuser@example.local" ): ',
                     self.parameter('existing-account-uri'),
                     http_https_acct_uri_parse_validate)
-        return f'acct:{ parsed[0] }@{ parsed[1] }'
+        return parsed
 
 
     def obtain_non_existing_account_identifier(self, nickname: str | None = None ) -> str:
@@ -55,7 +55,7 @@ class WebFingerServer(WebServer):
                     f'Please enter the URI of an non-existing account at Node "{self._rolename}" (e.g. "acct:does-not-exist@example.local" ): ',
                     self.parameter('nonexisting-account-uri'),
                     http_https_acct_uri_parse_validate)
-        return f'acct:{ parsed[0] }@{ parsed[1] }'
+        return parsed
 
 
     def override_webfinger_response(self, client_operation: Callable[[],Any], overridden_json_response: Any):
@@ -125,11 +125,11 @@ class WebFingerClient(WebClient):
             self.resource_uri = resource_uri
 
 
-    class WebfingerQueryFailedError(RuntimeError):
+    class WebfingerQueryFailedError(AssertionError):
         """
         Raised when no JRD could be obtained (e.g. got 404)
         """
-        def __init__(self, resource_uri: str, http_request_response_pair: HttpRequestResponsePair | None, msg: str | None = None ):
+        def __init__(self, resource_uri: str, http_request_response_pair: HttpRequestResponsePair | None = None, msg: str | None = None ):
             super().__init__(msg)
             self.resource_uri = resource_uri
             self.http_request_response_pair = http_request_response_pair

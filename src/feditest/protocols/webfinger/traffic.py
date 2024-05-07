@@ -1,8 +1,8 @@
 """
 """
 
-from dataclasses import dataclass
 import json
+from dataclasses import dataclass
 from typing import Any
 
 from feditest.protocols.web.traffic import HttpRequestResponsePair
@@ -278,7 +278,7 @@ working-copy-of"""
             if not isinstance(self._json['properties'], dict):
                 raise ClaimedJrd.InvalidTypeError(self, 'Member properties must be a JSON object')
 
-            for key, value in self._json['properties']:
+            for key, value in self._json['properties'].items():
                 if not isinstance(key, str):
                     raise ClaimedJrd.InvalidTypeError(self, 'Names in the properties object must be strings')
 

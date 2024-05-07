@@ -18,9 +18,11 @@
     </thead>
     <tbody>
         {% for test_spec in all_tests -%}
+        {% set test_id = loop.index -%}
         <tr>
-            <td class="name">{{ test_spec.name }}</td>
+            <td class="name">{{ test_spec.name | replace("webfinger.server.", "") }}</td>
             {%- for run_session, plan_session in sessions %}
+                {%- set session_id = loop.index %}
                 {%- set name = plan_session.constellation.name %}
                 {%- if not name %}{%- set name = run_session.name %}{%- endif %}
                 {%- set problem = get_problem(run_session, test_spec) %}
@@ -34,7 +36,16 @@
                     {%- set status = "passed" %}
                     {%- set status_desc = "Passed" %}
                 {%- endif %}
-            <td class="status {{ status }}" title="{{ status_desc }}">{{ status }}</td>
+            <td class="status {{ status }}">
+                {%- if status == "passed" %}{{ status }}
+                {%- else %}
+                    {{ status }}
+                    {%- set cell_id = "toggle_" ~ session_id ~ "_"  ~ test_id %}
+                    <input type="checkbox" id="{{ cell_id }}" class="expand-checkbox">
+                    <label for="{{ cell_id }}" class="expand-label"></label>
+                    <div class="expandable-content">{{ status_desc }}</div>
+                {%- endif %}
+                </td>
             {%- endfor %}
         </tr>   
         {%- endfor %}

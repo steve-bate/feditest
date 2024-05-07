@@ -175,7 +175,9 @@ class TestPlanSession(msgspec.Struct):
             raise TestPlanError(context_msg + 'No tests have been defined.')
 
         for index, test_spec in enumerate(self.tests):
-            test_spec.check_can_be_executed(self.constellation, context_msg + f'Test (index {index}) "{ test_spec.name }": ')
+            test_spec.check_can_be_executed(
+                self.constellation, context_msg + 
+                f'Test (index {index}) "{ test_spec.name }": ')
 
 
     def needed_role_names(self) -> set[str]:

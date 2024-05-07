@@ -5,7 +5,9 @@ Classes that represent a running TestPlan and its its parts.
 # pylint: disable=broad-exception-raised,broad-exception-caught,protected-access
 
 import getpass
+import json
 import os
+import pickle
 import platform
 import sys
 import time
@@ -18,6 +20,7 @@ from typing import IO, Any, List, Protocol, Type
 
 import jinja2
 from jinja2.exceptions import TemplateNotFound
+import msgspec
 
 import feditest
 from feditest.protocols import Node, NodeDriver
@@ -173,7 +176,6 @@ class TestClassTestStepProblem(TestProblem):
     def __str__(self):
         return f"{ self.test.name } / { self.test_step.name }: {self.exc}"
 
-
 class TestResultWriter(Protocol):
     """An object that writes test results in some format."""
     def write(self, plan: TestPlan,
@@ -229,7 +231,8 @@ class DefaultTestResultWriter:
                     print(f"Test failure: {run_session.name}/{test.name}")
                     for line in str(problem.exc).strip().split("\n"):
                         print(f"    {line}")
-        print(f"Test summary: total={ summary.total }, passed={ summary.passed }, failed={ summary.failed }, skipped={ summary.skipped }")
+        print(f"Test summary: total={ summary.total }, passed={ summary.passed }, " + 
+              "failed={ summary.failed }, skipped={ summary.skipped }")
 
 
 class TapTestResultWriter:
@@ -285,7 +288,7 @@ class HtmlTestResultWriter:
         self.out = out
         template_dir = os.path.join(os.path.dirname(__file__), "templates")
         self.templates = jinja2.Environment(
-            loader=jinja2.FileSystemLoader(template_dir)
+            loader=jinja2.FileSystemLoader(template_dir),
         )
 
     def write(
@@ -317,10 +320,54 @@ class HtmlTestResultWriter:
                     metadata=metadata,
                     all_tests=all_tests,
                     get_problem=_get_problem,
-                    remove_white=lambda s: re.sub('[ \t\n\a]', '_', s)
+                    remove_white=lambda s: re.sub('[ \t\n\a]', '_', s),
+                    format_problem=lambda p: (lambda s: s if len(s) < 128 else s[:129]+"...")(str(p.exc).strip())
                 )
             )
 
+
+class JsonTestResultWriter:
+    def __init__(self, out: IO = sys.stdout):
+        self.out = out
+
+    def write(
+        self,
+        plan: TestPlan,
+        run_sessions: list[TestRunSession],
+        metadata: dict[str, Any] | None = None,
+    ):
+        seen = set()
+        def _convert(obj: Any) -> Any:
+            seen.add(id(obj))
+            if isinstance(obj, msgspec.Struct):
+                # Why?
+                return {k:getattr(obj, k) for k in obj.__struct_fields__}
+            if hasattr(obj, "__dict__"):
+                return {k:v for k,v in obj.__dict__.items() if id(v) not in seen}
+            if isinstance(obj, datetime):
+                return obj.isoformat()
+            return obj
+        json.dump({
+            "plan": plan,
+            "run_sessions": run_sessions,
+            "metadata": metadata
+        }, self.out, default=_convert, indent=4)
+
+class PickleTestResultWriter:
+    def __init__(self, out: IO):
+        self.out = out
+
+    def write(
+        self,
+        plan: TestPlan,
+        run_sessions: list[TestRunSession],
+        metadata: dict[str, Any] | None = None,
+    ):
+        pickle.dump({
+            "plan": plan,
+            "run_sessions": run_sessions,
+            "metadata": metadata
+        }, self.out)
 
 def _get_problem(run_session, test: TestPlanTestSpec) -> TestProblem | None:
     return next((p for p in run_session.problems if p.test.name == test.name), None)
