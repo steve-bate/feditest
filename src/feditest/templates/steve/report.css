@@ -24,12 +24,30 @@ body {
     content: "Session: ";
 }
 
+.duration {
+    margin-left: 1rem;
+}
+
+.duration::before {
+    font-weight: bold;
+    content: "Duration: "
+}
+
+.duration .label {
+    margin-right: 0.5rem;
+}
+
 .constellation {
     margin-left: 1rem;
 }
 
 .constellation>.name::before {
+    font-weight: bold;
     content: "Constellation: ";
+}
+
+.constellation::after {
+    content: "Test Details";
 }
 
 .roles {
@@ -38,11 +56,8 @@ body {
     margin-left: 1rem;
 }
 
-.role>.name {
-    font-weight: bold;
-}
-
 .role>.name::before {
+    font-weight: bold;
     content: "Role: ";
 }
 
@@ -111,3 +126,25 @@ table.tests td {
 .expand-checkbox:checked+.expand-label::after {
     transform: rotate(90deg);
 }
+
+.sessions .tests {
+    margin-left: 3rem;
+}
+
+.sessions .tests .test {
+    margin-bottom: 1rem;
+}
+
+
+.sessions .tests .test .name::before {
+    content: "Test: ";
+}
+
+.sessions .tests .test .status::before {
+    content: "Status: ";
+}
+
+.sessions .tests .test .problem {
+    margin-left: 0.5rem;
+}
+

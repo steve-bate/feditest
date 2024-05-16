@@ -9,18 +9,18 @@ import json
 import os
 import pickle
 import platform
+import re
 import sys
 import time
 from abc import ABC
 from contextlib import redirect_stdout
 from dataclasses import dataclass
 from datetime import UTC, datetime, timezone
-import re
 from typing import IO, Any, List, Protocol, Type
 
 import jinja2
-from jinja2.exceptions import TemplateNotFound
 import msgspec
+from jinja2.exceptions import TemplateNotFound
 
 import feditest
 from feditest.protocols import Node, NodeDriver
@@ -110,11 +110,14 @@ class TestRunSession:
         self.problems : List[TestProblem] = []
         self._plan_session = plan_session
         self.constellation : TestRunConstellation | None = None
-
+        self.start_time: datetime = None
+        self.finish_time: datetime = None
 
     def run(self):
         if len(self._plan_session.tests ):
             info(f'Running session "{ self.name }"')
+
+            self.start_time = datetime.now(UTC)
 
             try:
                 self.constellation = TestRunConstellation(self._plan_session.constellation)
@@ -127,6 +130,7 @@ class TestRunSession:
                         self._run_test_spec(test_spec)
             finally:
                 self.constellation.teardown()
+                self.finish_time = datetime.now(UTC)
 
             if self.constellation._run_constellation:
                 fatal( 'Still have nodes in the constellation', self.constellation._run_constellation )
@@ -136,6 +140,10 @@ class TestRunSession:
         else:
             info(f'Skipping session "{ self.name }": no tests defined')
 
+    @property
+    def duration(self):
+        if self.start_time and self.finish_time:
+            return self.finish_time - self.start_time
 
     def _run_test_spec(self, test_spec: TestPlanTestSpec):
         info(f'Running test "{ test_spec.name }"')
@@ -286,10 +294,7 @@ class HtmlTestResultWriter:
     def __init__(self, template_name: str, out: IO = sys.stdout):
         self.template_name = template_name
         self.out = out
-        template_dir = os.path.join(os.path.dirname(__file__), "templates")
-        self.templates = jinja2.Environment(
-            loader=jinja2.FileSystemLoader(template_dir),
-        )
+        self.template_name = template_name
 
     def write(
         self,
@@ -297,13 +302,7 @@ class HtmlTestResultWriter:
         run_sessions: list[TestRunSession],
         metadata: dict[str, Any] | None = None,
     ):
-        try:
-            template = self.templates.get_template(self.template_name)
-        except TemplateNotFound:
-            try:
-                template = self.templates.get_template(self.template_name + '.jinja2')
-            except TemplateNotFound:
-                fatal('jinja2 template not found:', self.template_name)
+        template = self.get_template(self.template_name)
 
         with redirect_stdout(self.out):
             all_tests = sorted(
@@ -324,6 +323,32 @@ class HtmlTestResultWriter:
                     format_problem=lambda p: (lambda s: s if len(s) < 128 else s[:129]+"...")(str(p.exc).strip())
                 )
             )
+
+    @staticmethod
+    def get_template(template_name: str):
+        template_dir = os.path.join(os.path.dirname(__file__), "templates")
+        template_subdir = os.path.join(template_dir, os.path.dirname(template_name))
+        
+        template_dirs = [template_dir]
+        if template_subdir and template_dir != template_subdir:
+            template_dirs.insert(0, template_subdir)
+
+        templates = jinja2.Environment(
+            loader=jinja2.FileSystemLoader(template_dirs),
+        )
+
+        template_file = template_name
+
+        try:
+            template = templates.get_template(template_file)
+        except jinja2.TemplateNotFound:
+            try:
+                template_file += ".jinja2"
+                template = templates.get_template(template_file)
+            except jinja2.TemplateNotFound:
+                fatal("jinja2 template not found:", template_name)
+
+        return template
 
 
 class JsonTestResultWriter:
@@ -391,15 +416,21 @@ class TestRun:
 
         run_sessions: list[TestRunSession] = []
 
+        start_time = datetime.now(UTC)
+
         for i, plan_session in enumerate(self._plan.sessions):
             session_name = f'{self._plan.name}/{str(i)}' if self._plan.name else f'session_{ i }'
             run_session = TestRunSession(session_name, plan_session)
             run_session.run()
             run_sessions.append(run_session)
 
+        finish_time = datetime.now(UTC)
+
         metadata = {
             "feditest": feditest.version(),
-            "timestamp": datetime.now(UTC),
+            "start_time": start_time,
+            "finish_time": finish_time,
+            "duration": finish_time - start_time,
             "platform": platform.platform(),
             "username": getpass.getuser(),
             "hostname": platform.node(),

@@ -5,6 +5,7 @@
     {%- if not session_id %}{%- set session_id = run_session.name %}{%- endif %}
     <div class="session" id="{{ session_id }}">
         <div class="name">{{ run_session.name }}</div>
+        <div class="duration">{{ run_session.duration }}</div>
         <div class="constellation">
             {% set constellation = plan_session.constellation -%}
             <div class="name">{{ constellation.name }}</div>
@@ -34,6 +35,28 @@
                 </div>
                 {%- endfor %}
             </div>
+        </div>
+        <div class="tests">
+            {% for test_spec in plan_session.tests %}
+            <div class="test">
+                <div class="name">{{ test_spec.name.replace("webfinger.server.", "") }}</div>
+                {%- set problem = get_problem(run_session, test_spec) %}
+                {%- if test_spec.disabled %}
+                    {%- set status = "skipped" %}
+                    {%- set status_desc = test_spec.disabled %}
+                {%- elif problem %}
+                    {%- set status = "failed" %}
+                    {%- set status_desc = format_problem(problem) %}
+                {%- else %}
+                    {%- set status = "passed" %}
+                    {%- set status_desc = "Passed" %}
+                {%- endif %}
+                <div class="status {{status}}">{{ status }}</div>
+                {% if status != "passed" %}
+                <div class="problem">{{ status_desc.replace("\n", "<br>") }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
         </div>
     </div>
     {%- endfor %}
