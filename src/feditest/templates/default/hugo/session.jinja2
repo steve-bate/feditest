@@ -1,0 +1,10 @@
+{% set plan_session = run.plan.sessions[run_session.plan_session_index] -%}
+{% set name = plan_session.constellation.roles.server.parameters.app or plan_session.constellation.name or run_session.name -%}
+---
+title: "{{ name }}"
+---
+
+{% raw %}{{< raw-html >}}{% endraw %}
+<link rel="stylesheet" href="../../css/style.css" type="text/css">
+{% include "session-data.jinja2" %}
+{% raw %}{{< /raw-html >}}{% endraw %}

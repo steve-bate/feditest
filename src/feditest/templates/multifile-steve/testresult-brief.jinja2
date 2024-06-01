@@ -1,0 +1,5 @@
+{%- if result %}
+<div class="status {{ result.css_class() }}"><a href="{{ session_file_path(plan_session) }}#{{ test_meta.name }}">{{ result.short_title() }}</a></div>
+{%- else %}
+<div class="status passed">Passed</div>
+{%- endif %}

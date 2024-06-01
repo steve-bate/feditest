@@ -1,0 +1,21 @@
+<div class="metadata">
+    <table>
+        {# This makes me sad... it will be more work to dynamically add metadata #}
+        <tbody>
+            <tr>
+                <th>Duration</th>
+                <td>{{ run.ended - run.started }}</td>
+            </tr>
+            {% for key in ['started', 'ended', 'username', 'hostname', 'platform'] -%}
+            <tr>
+                <th>{{ key.capitalize() }}</th>
+                <td>{{ getattr(run, key) }}</td>
+            </tr> 
+            {%- endfor %}
+            <tr>
+                <th>Feditest&nbsp;version</th>
+                <td>{{ getattr(run, 'feditest_version') }}</td>
+            </tr>
+        </tbody>
+    </table>
+</div>

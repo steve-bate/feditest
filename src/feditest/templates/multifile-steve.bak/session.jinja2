@@ -1,0 +1,20 @@
+{%- set plan_session = run.plan.sessions[run_session.plan_session_index] %}
+{%- set name = plan_session.constellation.roles.server.parameters.app or plan_session.constellation.name or run_session.name %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>{% include "style.css" %}</style>
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+    />
+    <title>Session: {{ name }}</title>
+</head>
+<body>
+    <h1 class="session name">Session: {{ name }}</h1>
+    {% include "session-data.jinja2" %}
+</body>
+</html>

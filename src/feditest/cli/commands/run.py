@@ -2,14 +2,20 @@
 Run one or more tests
 """
 
+import re
 from argparse import ArgumentParser, Namespace, _SubParsersAction
 
 import feditest
+import feditest.testruntranscript
 from feditest.cli import default_node_drivers_dir
 from feditest.reporting import warning
 from feditest.testplan import TestPlan
 from feditest.testrun import TestRun
-from feditest.testruncontroller import AutomaticTestRunController, InteractiveTestRunController, TestRunController
+from feditest.testruncontroller import (
+    AutomaticTestRunController,
+    InteractiveTestRunController,
+    TestRunController,
+)
 from feditest.testruntranscript import (
     JsonTestRunTranscriptSerializer,
     MultifileRunTranscriptSerializer,
@@ -40,6 +46,9 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     if not plan.has_compatible_version():
         warning(f'Test plan was created by FediTest { plan.feditest_version }, you are running FediTest { FEDITEST_VERSION }: incompatibilities may occur.')
     plan.check_can_be_executed()
+
+    if args.filter:
+        plan.sessions = [s for s in plan.sessions if re.search(args.filter, s.constellation.name, re.IGNORECASE)]
 
     test_run = TestRun(plan, args.who)
     if args.interactive :
@@ -100,3 +109,4 @@ def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
                         help="Write results in JSON format to stdout, or to the provided file (if given).")
     parser.add_argument('--summary', nargs="?", const=True, default=False,
                         help="Write summary to stdout, or to the provided file (if given). This is the default if no other output option is given")
+    parser.add_argument("--filter", help="Option regex to filter sessions (constellations for now)")

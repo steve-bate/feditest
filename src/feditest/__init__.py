@@ -69,7 +69,9 @@ def _load_tests_pass2() -> None:
     global _registered_as_test_step
 
     for name, value in _registered_as_test.items():
-        test : Test | None
+        if getattr(value, "feditest_disabled", False):
+            continue
+        test : Test | None = None
         if isinstance(value, FunctionType):
             test = TestFromTestFunction(
                     name,
@@ -110,7 +112,7 @@ def _load_tests_pass2() -> None:
               + '\n    '.join( _registered_as_test_step.keys() ))
 
 
-def test(to_register: type[Any]) -> type[Any]:
+def test(*args, **kwargs) -> type[Any]:
     """
     Use as a decorator to register a supposed test. Use either on a function (running of which constitutes the entire test)
     or on a class (where the tests consists of running __init__ and then all the contained functions maked with @step).
@@ -125,18 +127,27 @@ def test(to_register: type[Any]) -> type[Any]:
         def test_step_1() :
             ...
     """
-    global _loading_tests
-    global _registered_as_test
+    def _test(to_register: type[Any], disabled: bool = False):
+        global _loading_tests
+        global _registered_as_test
 
-    if not _loading_tests:
-        fatal('Do not define tests outside of testsdir')
+        if not _loading_tests:
+            fatal('Do not define tests outside of testsdir')
 
-    name = _full_name_of_function(to_register)
-    if name in _registered_as_test:
-        fatal(f'Test with this name registered already: {name}')
+        name = _full_name_of_function(to_register)
+        if name in _registered_as_test:
+            fatal(f'Test with this name registered already: {name}')
 
-    _registered_as_test[name] = to_register
-    return to_register
+        setattr(to_register, "feditest_disabled", disabled)
+
+        _registered_as_test[name] = to_register
+        return to_register
+
+    if len(args) == 1 and len(kwargs) == 0 and isinstance(args[0], Callable):
+        return _test(args[0])
+    else: 
+        return lambda f: _test(f, kwargs.get("disabled"))
+
 
 
 def step(to_register: Callable[..., None]) -> Callable[..., None]:

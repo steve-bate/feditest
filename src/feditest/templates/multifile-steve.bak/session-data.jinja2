@@ -1,0 +1,83 @@
+{%- from "macros.jinja2" import format_failure -%}
+
+<div class="session" id="{{ name }}">
+    <div class="duration">{{ "%.3f" % (run_session.ended - run_session.started).total_seconds() }}s</div>
+    <div class="constellation">
+        {% set constellation = plan_session.constellation -%}
+        <div class="name">{{ constellation.name }}</div>
+        <div class="roles">
+            {% for role_name, role in constellation.roles.items() -%}
+                {% if role_name != "client" %}
+                <div class="role">
+                    <div class="name">{{ role_name }}</div>
+                    <div class="driver">{{ role.nodedriver }}</div>
+                    {%- if role.parameters %}
+                    <table class="parameters">
+                        <thead>
+                            <tr>
+                                <th>Key</th>
+                                <th>Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for key, value in role.parameters.items() -%}
+                            <tr>
+                                <td class="key">{{ key }}</td>
+                                <td class="key">{{ value }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>              
+                    </table>
+                    {%- endif %}
+                </div>
+                {% endif %}
+            {%- endfor %}
+            
+        </div>
+    </div>
+    <h2 class="tests">Tests</h2>
+    <div class="tests">
+        {% for run_test in run_session.run_tests %}
+        {% set plan_test = plan_session.tests[run_test.plan_test_index] %}
+        <div class="test" id="{{ plan_test.name }}">
+            <div class="name">{{ plan_test.name.replace("webfinger.server.", "") }}</div>
+            <div class="test_duration">Duration: {{ "%.3f" % (run_test.ended - run_test.started).total_seconds() }}s</div>
+            {%- set problem = get_results_for(run, run_session, plan_test) | first %}
+            {%- set status = None %}
+            {%- set status_desc = "" %}
+            {%- if problem %}
+                {% if problem.problem_category == "skip" %}
+                    {%- set status = "skipped" %}
+                    {%- set status_desc = problem.msg or "No reason" %}
+                {% else %}
+                    {%- set status = "failed" %}
+                    {%- set status_label = format_failure(problem) %}
+                    {%- set status_desc = problem.msg %}
+                {% endif %}
+            {%- else %}
+                {%- set status = "✅" %}
+                {%- endif %}
+            <div class="status">
+                <span class="status_label">Status:</span>
+                <span class="status {{status}}">{{ status_label or status }}<span>
+            </div>
+            {% if status != "passed" %}
+            <div class="problem status {{status}}">
+                {{ status_desc }}
+                {% if problem.stacktrace %}
+                <div class="problem stacktrace">
+                    {% for line in problem.stacktrace %}
+                    <div class="problem stacktrace line">
+                        {% if "src/feditest" not in line[0] %}
+                            {{ line | join(":") }}
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>

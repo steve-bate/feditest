@@ -1,0 +1,26 @@
+{% macro format_failure(problem) %}
+{% set s = problem.msg %}
+{% if "502" in s %}
+{%      set label = "Server down" %}
+{% elif 'Expected: <4' in s %}
+{%      set label = "HTTP status" %}
+{% elif "HTTP status" in s %}
+{%      set label = "HTTP status" %}
+{% elif "Expected: ('application/jrd+json'" in s %}
+{%      set label = "Content type" %}
+{% elif "Wrong HTTP content type" in s %}
+{%      set label = "Content type" %}
+{% elif "Returns JRD content" in s %}
+{%      set label = "Content type" %}
+{% elif "allow-origin" in s %}
+{%      set label = "CORS header" %}
+{% elif "InvalidRelError" in s %}
+{%      set label = "Invalid rel" %}
+{% elif "InvalidMediaTypeError" in s %}
+{%      set label = "Invalid rel type" %}
+{% else %}
+{%      set label = "failed" %}
+{% endif %}
+{{ label }} ({{ problem.problem_category }})
+{% endmacro %}
+

@@ -1,0 +1,102 @@
+{%- from "macros.jinja2" import format_failure -%}
+
+<table class="tests">
+    <thead>
+        <tr>
+            <th>Test</th>
+            {%- for run_session in run.sessions %}
+                {%- set plan_session = run.plan.sessions[run_session.plan_session_index] %}
+                {%- set name = plan_session.constellation.roles.server.parameters.app or plan_session.constellation.name or run_session.name %}
+                <th>
+                    <a href="{{ session_linker(name) }}">{{ name }}</a>
+                </th>
+            {%- endfor %}
+            <th>Passed</th>
+        </tr>
+    </thead>
+    <tbody>
+        {%- set col_stats = namespace(total=[0]*(run.sessions|length), passed=[0]*(run.sessions|length)) %}
+        {% for _, test_meta in sorted(run.test_meta.items()) %}
+        {% set test_id = loop.index %}
+        <tr>
+            {%- set row_stats = namespace(total=0, passed=0) %}
+            <td>
+                <div class="name">{{ test_meta.name | regex_sub(".*::", "") }}</div>
+                <div class="description">{{ test_meta.description }}</div>
+            </td>
+            {%- for run_session in run.sessions %}
+                {%- set plan_session = run.plan.sessions[run_session.plan_session_index] %}
+                {%- set session_id = loop.index0 %}
+                {%- set problem = get_results_for(run, run_session, test_meta) | first %}
+                {%- set status_label = None %}
+                {%- set status_desc = "" %}
+                {%- if test_meta.disabled %}
+                    {%- set status = "skipped" %}
+                    {%- set status_desc = test_meta.disabled %}
+                {%- elif problem %}
+                    {%- set status = "failed" %}
+                    {%- set status_label = format_failure(problem) %}
+                    {%- set status_desc = problem %}
+                    {%- set row_stats.total = row_stats.total + 1 %}
+                    {% set col_stats.total = col_stats.total[:session_id] + [col_stats.total[session_id] + 1] + col_stats.total[session_id + 1:] %}
+                {%- else %}
+                    {%- set status = "passed" %}
+                    {%- set row_stats.passed = row_stats.passed + 1 %}
+                    {%- set row_stats.total = row_stats.total + 1 %}
+                    {% set col_stats.passed = col_stats.passed[:session_id] + [col_stats.passed[session_id] + 1] + col_stats.passed[session_id + 1:] %}
+                    {% set col_stats.total = col_stats.total[:session_id] + [col_stats.total[session_id] + 1] + col_stats.total[session_id + 1:] %}
+                {%- endif %}
+            <td class="status {{ status }}">
+                {%- if status == "passed" %}{{ status }}
+                {%- else %}
+                    {{ status_label or status }}
+                    {%- set cell_id = "toggle_" ~ session_id ~ "_"  ~ test_id %}
+                    <input type="checkbox" id="{{ cell_id }}" class="expand-checkbox">
+                    <label for="{{ cell_id }}" class="expand-label"></label>
+                    <div class="expandable-content">
+                        {% for line in status_desc.msg.split("\n") %}
+                            {% if ".py" not in line %}
+                                {{ line | escape }}<br>
+                            {% endif %}
+                        {% endfor %}
+                        <div class="problem stacktrace">
+                            {% for frame in status_desc.stacktrace %}
+                            <div class="problem stacktrace line">
+                                {% if "src/feditest" not in frame[0] %}
+                                    <a target="_blank" href="https://github.com/fediverse-devnet/feditest-tests-fediverse/blob/develop/{{ frame | join("#L") }}">
+                                    {{ frame | join(":") }}
+                                    </a><br> 
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>                    
+                    </div>
+                {%- endif %}
+            </td>
+            {%- endfor %}
+            <td>
+            {% if row_stats.total %}
+                {{ "%.0f" % ((row_stats.passed / row_stats.total) * 100.0) }}%
+                ({{ row_stats.passed }}/{{ row_stats.total }})
+            {% else %}
+                NaN
+            {% endif %}
+            </td>
+        </tr>   
+        {%- endfor %}
+        <tr>
+            <th>Passed</th>
+            {% for _ in run.sessions %}
+            <td>
+            {% if col_stats.total[loop.index0] %}
+                {{ "%.0f" % ((col_stats.passed[loop.index0] / col_stats.total[loop.index0]) * 100.0) }}%
+                ({{ col_stats.passed[loop.index0] }}/{{ col_stats.total[loop.index0] }})
+            {% else %}
+                NaN
+            {% endif %}
+            </td>
+            {% endfor %}
+            <td></td>
+        </tr>
+    </tbody>
+</table>

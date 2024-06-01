@@ -1,0 +1,8 @@
+{%- if result %}
+<div class="status {{ result.css_class() }}">
+	{{ result.title() }}
+</div>
+<pre>{{ result }}</pre>
+{%- else %}
+<div class="status passed">Passed</div>
+{%- endif %}
